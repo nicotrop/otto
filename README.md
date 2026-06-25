@@ -1,5 +1,7 @@
 <img src="otto.svg" width="88" alt="Otto the octopus" align="left" />
 
+# otto
+
 otto runs a plan to completion. You break a feature into slices with dependencies, otto runs the independent ones in parallel git worktrees, lands each as a commit, and moves to the next wave until the work is done or it hits something that needs you.
 
 ## Why I built it
