@@ -4,7 +4,7 @@ description: Execute a .plans/<slug> slice plan as a dependency-ordered wave loo
 disable-model-invocation: true
 ---
 
-# Otto
+# otto
 
 Execution engine for slice plans. The pipeline is **`/to-plan` → `/to-slices` → `/otto run`**;
 otto owns only the last stage. The `.plans/<slug>/` directory (prd.md, slices/*.md, state.json,
