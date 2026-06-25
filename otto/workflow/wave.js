@@ -1,0 +1,92 @@
+export const meta = {
+  name: 'otto-fanout',
+  description: 'Run one wave of a .plans/<slug> slice graph: fan out one agent per slice, each in its otto-made worktree, committing its work',
+  phases: [{ title: 'Run wave' }],
+}
+
+if (typeof args === 'string') log('⚠ args arrived as a STRING, not an object — parsing it (harness quirk)')
+let a
+try {
+  a = (typeof args === 'string' ? JSON.parse(args) : args) || {}
+} catch (e) {
+  throw new Error(`otto fanout: args is an unparseable string (${e.message}). Pass the wave JSON as an OBJECT, not a stringified blob.`)
+}
+const slices = (a.slices || []).filter(Boolean)
+
+if (!slices.length) {
+  const shape = `keys=[${Object.keys(a).join(',') || 'none'}]`
+  if (!a.slug) throw new Error(`otto fanout: args has no recognizable wave fields (${shape}). It probably didn't reach the script as an object.`)
+  log(`Wave is empty (${shape}) — graph drained, blocked, or only HITL remains.`)
+  return { ran: [], halt_hitl: a.halt_hitl || [] }
+}
+
+function workdir(s) {
+  return s.isolation === 'worktree' ? `${a.repo}/.worktrees/${s.key}` : a.repo
+}
+
+function buildPrompt(s) {
+  const dir = workdir(s)
+  const place = s.isolation === 'worktree'
+    ? `Work in the ISOLATED git worktree at ${dir} — it is a fresh checkout already created for you. Sibling slices in this wave run in their OWN worktrees in parallel; you will not see their changes. cd there first and stay inside it.`
+    : `Work DIRECTLY in the repo at ${dir} (the main working tree). cd there first.`
+
+  return `You are implementing ONE slice of the "${a.slug}" plan: ${s.key}.
+
+${place}
+
+Read these from disk BEFORE coding — they are the source of truth:
+1. The slice spec: .plans/${a.slug}/slices/${s.key}.md  (what to build, acceptance criteria, which skills to load, how to validate)
+2. .plans/${a.slug}/learnings.md if it exists — notes earlier slices left for you.
+
+Load the skills the spec names and follow this project's CLAUDE.md / .claude/rules conventions.
+
+Hard constraints:
+- Implement the slice end to end and satisfy its acceptance criteria.
+- Run the validation steps the spec lists. Fix all errors (warnings ok).
+${s.isolation === 'worktree'
+  ? `- COMMIT your finished work in this worktree (a single \`git commit\`, message "${s.key}"). Do NOT push and do NOT open a PR. otto lands it from the main tree.`
+  : `- Do NOT commit, push, or open a PR. Leave your work as changes in the working tree — otto marks it done.`}
+- You cannot do rendered-browser QA. Code + static validation only.
+
+Return STRICT JSON per schema: the files you changed, a short summary, whether validation passed, and terse actionable learnings for the slices that follow (gotchas, interface contracts, decisions you made).`
+}
+
+const SCHEMA = {
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    changedFiles: { type: 'array', items: { type: 'string' } },
+    summary: { type: 'string' },
+    validationClean: { type: 'boolean' },
+    learnings: { type: 'string' },
+    notes: { type: 'string' },
+  },
+  required: ['changedFiles', 'summary', 'validationClean'],
+}
+
+const runOne = s =>
+  agent(buildPrompt(s), { label: s.key, phase: 'Run wave', schema: SCHEMA })
+    .then(r => ({ key: s.key, isolation: s.isolation, result: r }))
+
+phase('Run wave')
+
+let waveResults
+if (a.mode === 'inline') {
+  log(`Wave: ${slices.map(s => s.key).join(' → ')} (inline, sequential)`)
+  waveResults = []
+  for (const s of slices) waveResults.push(await runOne(s))
+} else {
+  log(`Wave: ${slices.map(s => s.key).join(', ')} (${slices.length} parallel worktree${slices.length === 1 ? '' : 's'})`)
+  waveResults = await parallel(slices.map(s => () => runOne(s)))
+}
+
+for (const wr of waveResults) {
+  if (!wr || !wr.result) log(`⚠ ${wr && wr.key} returned nothing — stays pending (not landed); its dependents stay blocked.`)
+}
+
+return {
+  slug: a.slug,
+  ran: waveResults.filter(r => r && r.result).map(r => r.key),
+  halt_hitl: a.halt_hitl || [],
+  results: waveResults,
+}
