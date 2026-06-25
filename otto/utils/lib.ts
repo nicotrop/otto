@@ -14,6 +14,12 @@ export interface PlanFile {
   [k: string]: unknown;
 }
 
+export interface Problem {
+  severity: "error" | "warn";
+  slice?: string;
+  message: string;
+}
+
 export interface RunnableSlice {
   key: string;
   type: SliceType;
