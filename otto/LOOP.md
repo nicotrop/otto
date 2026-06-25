@@ -6,9 +6,12 @@ all slices, `worktree`) through **every** `start`/`init` call so they agree.
 Let `OTTO="<this-skill-dir>/index.ts"` (the skill's own directory — the "Base directory for this
 skill" path from the invocation).
 
-**Step 0 — once, before anything else:** run `$OTTO snapshot <slug>`. This commits the plan dir so
-it is tracked for the whole run; worktrees cut from HEAD then contain the slice specs an agent needs
-to read. (No-op if the plan is already committed.)
+**Step 0 — once, before anything else:** run `$OTTO snapshot <slug>`. It first **validates the plan**
+(same path as `$OTTO validate`): on any error it prints the `error:` lines to stderr, exits non-zero,
+and does **not** commit — an invalid, hand-edited plan can't start a run. Warnings (e.g. an orphan
+slice `.md`) print but don't block. If validation passes, it commits the plan dir so it is tracked for
+the whole run; worktrees cut from HEAD then contain the slice specs an agent needs to read. (The commit
+is a no-op if the plan is already committed.)
 
 Then repeat until `wave` yields no slices:
 
