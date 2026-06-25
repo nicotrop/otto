@@ -2,7 +2,7 @@
 
 # otto
 
-otto runs a plan to completion. You break a feature into slices with dependencies, otto runs the independent ones in parallel git worktrees, lands each as a commit, and moves to the next wave until the work is done or it hits something that needs you.
+otto runs a plan to completion in [Claude Code](https://www.claude.com/product/claude-code) (only runtime for now). You break a feature into slices with dependencies, otto runs the independent ones in parallel git worktrees, lands each as a commit, and moves to the next wave until the work is done or it hits something that needs you.
 
 ## Why I built it
 
@@ -27,7 +27,7 @@ git clone https://github.com/nicotrop/otto
 cp -r otto/{otto,to-plan,to-slices} ~/.claude/skills/
 ```
 
-Needs Node 23+ (otto runs its TypeScript directly).
+Drop the folders in your Claude Code skills directory (otto is Claude Code only for now). Needs Node 23+ (otto runs its TypeScript directly).
 
 ## Skills
 
