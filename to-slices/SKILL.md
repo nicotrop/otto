@@ -122,6 +122,35 @@ Update `.plans/<slug>/state.json` to include all slices:
 }
 ```
 
-Valid statuses: `pending`, `in-progress`, `review`, `done`.
+Valid statuses: `pending`, `review`, `done`. (otto's `Status` type is exactly these three — a
+slice authored with any other status, e.g. `in-progress`, is `!== "pending"` and so is silently
+never picked up as runnable.)
 
 Do NOT modify `prd.md` or any other existing files in the plan folder.
+
+### 8. Validate the plan (blocking auto-fix loop)
+
+After `state.json` is written, validate the whole plan before showing the user the result — a
+broken plan must never be the visible output of slicing.
+
+**Resolve the validator.** otto is the sibling skill of this one: from this skill's own directory
+(the "Base directory for this skill" path from the invocation), otto's CLI is
+`../otto/index.ts`. Let `OTTO="<that path>"` — the same way otto's `LOOP.md` resolves `$OTTO` to
+its own `index.ts`. If `../otto/index.ts` does not exist (otto genuinely isn't installed), warn
+`"validator unavailable, skipping"` and leave `state.json` as written — do NOT fail slicing.
+
+**Run the loop:**
+
+1. Run `$OTTO validate <slug>`.
+2. **On exit 1** (errors): read the `error: <slice>: <msg>` lines from stderr, fix the cause in
+   `state.json` and/or the offending slice `.md` files (e.g. a bad `blocked_by` reference, a
+   missing/invalid `**Type:**` line, a malformed `state.json`), then re-run `$OTTO validate <slug>`.
+   **Repeat until validate exits 0, capped at 3 attempts.** If it still fails after the 3rd
+   attempt, show the user the remaining `error:` problems and **stop** — do not silently ship a
+   broken plan.
+3. **Warnings do NOT trigger the loop.** validate exits 0 for warnings (e.g. `warn: <slice>: ` for
+   an orphan `.md` file with no `state.json` entry). Print them for the user's awareness, but a
+   warning is surfaced, not blocked on.
+
+Only after validate exits 0 (or warnings-only, or otto is not installed) present the finished
+breakdown to the user.
