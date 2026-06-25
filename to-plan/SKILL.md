@@ -30,7 +30,7 @@ This skill takes the current conversation context and codebase understanding and
 }
 ```
 
-The `slices` field stays empty — it will be populated by `/skill:to-slices`.
+The `slices` field stays empty — it will be populated by `/to-slices`.
 
 <prd-template>
 

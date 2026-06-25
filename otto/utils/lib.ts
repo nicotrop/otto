@@ -33,12 +33,14 @@ export interface Args {
   range?: string;
   mode: Mode;
   learning?: string;
+  wave?: number;
 }
 
 export function parseArgs(args: string[]): Args {
   let range: string | undefined;
   let learning: string | undefined;
   let mode: Mode = "worktree";
+  let wave: number | undefined;
   const pos: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -50,11 +52,15 @@ export function parseArgs(args: string[]): Args {
       range = args[++i];
     } else if (a === "--learning" || a === "-L") {
       learning = args[++i];
+    } else if (a === "--wave" || a === "-w") {
+      const n = Number(args[++i]);
+      if (!Number.isInteger(n) || n < 1) die(`--wave must be a positive integer, got: ${args[i]}`);
+      wave = n;
     } else {
       pos.push(a);
     }
   }
-  return { slug: pos[0], slice: pos[1], range, mode, learning };
+  return { slug: pos[0], slice: pos[1], range, mode, learning, wave };
 }
 
 export function info(m: string) { console.error(`▸ ${m}`); }

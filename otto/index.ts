@@ -12,7 +12,7 @@ const o = parseArgs(argv);
 switch (cmd) {
   case "snapshot": cmdSnapshot(o.slug); break;
   case "validate": cmdValidate(o.slug); break;
-  case "wave":     cmdWave(o.slug, o.range, o.mode); break;
+  case "wave":     cmdWave(o.slug, o.range, o.mode, o.wave); break;
   case "land":     cmdLand(o.slug, o.slice, o.learning); break;
   case "status":   cmdStatus(o.slug); break;
   case "list":     cmdList(o.slug, o.range, o.mode); break;

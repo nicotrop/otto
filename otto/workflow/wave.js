@@ -41,14 +41,16 @@ Read these from disk BEFORE coding — they are the source of truth:
 Load the skills the spec names and follow this project's CLAUDE.md / .claude/rules conventions.
 
 Hard constraints:
-- Implement the slice end to end and satisfy its acceptance criteria.
-- Run the validation steps the spec lists. Fix all errors (warnings ok).
+- Implement the slice end to end and make every acceptance criterion in the spec actually pass.
+- Run the validation steps the slice's spec lists (typecheck, tests, linters, and other) and read the output. Fix every error your changes introduced; warnings are ok.
+- A slice is not done until its validation runs clean of new errors. If you cannot get it clean, set validationClean=false and explain why in notes, do not report it as passing.
+- If the slice is too large to finish and verify in this single pass, stop, set validationClean=false, and say so in notes rather than committing a half-done slice. otto would rather you halt than land broken code.
 ${s.isolation === 'worktree'
-  ? `- COMMIT your finished work in this worktree (a single \`git commit\`, message "${s.key}"). Do NOT push and do NOT open a PR. otto lands it from the main tree.`
+  ? `- Only once validation is clean, COMMIT your finished work in this worktree (a single \`git commit\`, message "${s.key}"). Do NOT push and do NOT open a PR. otto lands it from the main tree.`
   : `- Do NOT commit, push, or open a PR. Leave your work as changes in the working tree — otto marks it done.`}
 - You cannot do rendered-browser QA. Code + static validation only.
 
-Return STRICT JSON per schema: the files you changed, a short summary, whether validation passed, and terse actionable learnings for the slices that follow (gotchas, interface contracts, decisions you made).`
+Return STRICT JSON per schema: the files you changed, a short summary, whether validation TRULY passed (you ran it and saw it clean), the exact validation commands you ran, and terse actionable learnings for the slices that follow (gotchas, interface contracts, decisions you made).`
 }
 
 const SCHEMA = {
@@ -57,11 +59,12 @@ const SCHEMA = {
   properties: {
     changedFiles: { type: 'array', items: { type: 'string' } },
     summary: { type: 'string' },
-    validationClean: { type: 'boolean' },
+    validationClean: { type: 'boolean', description: 'true ONLY if you actually ran the spec validation and saw it pass clean' },
+    validationCommands: { type: 'array', items: { type: 'string' }, description: 'the exact commands you ran to validate (empty if none ran)' },
     learnings: { type: 'string' },
-    notes: { type: 'string' },
+    notes: { type: 'string', description: 'if validationClean is false, why' },
   },
-  required: ['changedFiles', 'summary', 'validationClean'],
+  required: ['changedFiles', 'summary', 'validationClean', 'validationCommands'],
 }
 
 const runOne = s =>
@@ -81,7 +84,8 @@ if (a.mode === 'inline') {
 }
 
 for (const wr of waveResults) {
-  if (!wr || !wr.result) log(`⚠ ${wr && wr.key} returned nothing — stays pending (not landed); its dependents stay blocked.`)
+  if (!wr || !wr.result) { log(`⚠ ${wr && wr.key} returned nothing — stays pending (not landed); its dependents stay blocked.`); continue }
+  if (wr.result.validationClean === false) log(`⚠ ${wr.key} reported validationClean=false, do not land it as done. Reason: ${wr.result.notes || '(none given)'}`)
 }
 
 return {

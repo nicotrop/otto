@@ -13,14 +13,19 @@ slice `.md`) print but don't block. If validation passes, it commits the plan di
 the whole run; worktrees cut from HEAD then contain the slice specs an agent needs to read. (The commit
 is a no-op if the plan is already committed.)
 
-Then repeat until `wave` yields no slices:
+Keep a wave counter starting at 1. Then repeat until `wave` yields no slices:
 
-1. **Compute AND set up the next wave — one command.** Run `$OTTO wave <slug> [-s range] [-m mode]`.
+1. **Compute AND set up the next wave — one command.** Run `$OTTO wave <slug> -w <N> [-s range] [-m mode]`,
+   where `<N>` is the current wave count (1 on the first pass, +1 each loop).
    In `worktree` mode it branches a worktree off the *current* HEAD for each slice and gitignores
    `.worktrees/`; in `inline` mode it sets up nothing (agents edit the main tree). Then it prints the
-   wave JSON on stdout: `{ slug, repo, base_sha, mode, slices: [...], halt_hitl: [...] }`. Slices stay
-   `pending` until `land` marks them `done`, so the call is naturally idempotent — re-running it
-   recomputes the same wave and reuses any worktree it already made.
+   wave JSON on stdout: `{ slug, repo, base_sha, mode, slices: [...], halt_hitl: [...], wave_num, max_waves, cap_reached }`.
+   Slices stay `pending` until `land` marks them `done`, so the call is naturally idempotent —
+   re-running it recomputes the same wave and reuses any worktree it already made.
+   - `cap_reached: true` → the wave count passed `max_waves` (≈ the slice count), so the loop is
+     spinning without landing slices. **Stop the loop.** Report that otto hit the iteration cap, run
+     `$OTTO status <slug>` to list what's still `pending`, and tell the user the loop isn't making
+     progress — likely a slice that keeps failing validation or returning nothing. Do not keep looping.
    - `slices` empty **and** `halt_hitl` non-empty → the only runnable slices are HITL.
      **Stop the loop.** Tell the user which slices need them and why (read each slice `.md` to
      summarize the decision/QA needed). Do not run them.
@@ -33,13 +38,20 @@ Then repeat until `wave` yields no slices:
    `args.slices`, and a string has no `.slices` (it throws loudly rather than silently running zero agents).
    Each subagent reads its slice spec + `learnings.md` from disk, implements, validates, and (in a
    worktree) commits. Worktree mode runs slices in parallel; inline mode sequentially. The workflow
-   returns `{ ran, results: [{ key, result: { changedFiles, summary, validationClean, learnings } }] }`.
+   returns `{ ran, results: [{ key, result: { changedFiles, summary, validationClean, validationCommands, learnings, notes } }] }`.
 
-3. **Land each slice, in order.** For each `key` in `ran`, run
-   `$OTTO land <slug> <key> -L "<that slice's learnings from the result>"`. This rebases the slice's
-   branch onto current HEAD, applies *only its deltas*, appends the learning to `learnings.md`, and
-   **commits the slice's code + state + learning as one commit** (message = the slice key). Committing
-   is what lets the next wave compound — its worktrees are cut from this new HEAD.
+3. **Land each slice, in order.** For each `key` in `ran`, **first check its result**:
+   - If `validationClean` is `false`, **do NOT land it.** The slice agent says its own validation
+     didn't pass (see `notes`). Landing it would commit broken code that every later wave compounds on.
+     Leave the slice `pending` and skip to the next `key` — this is a **retry, not a dead end**: it
+     stays unblocked, so the next wave recomputes and runs it again with a *fresh* agent and a worktree
+     cut from the new HEAD (now carrying this wave's landed siblings), which often clears the failure.
+     The wave cap is the only backstop — if it keeps failing wave after wave with nothing else landing,
+     the cap eventually halts the loop so a human looks. Just note the failure and loop on.
+   - Otherwise run `$OTTO land <slug> <key> -L "<that slice's learnings from the result>"`. This rebases
+   the slice's branch onto current HEAD, applies *only its deltas*, appends the learning to
+   `learnings.md`, and **commits the slice's code + state + learning as one commit** (message = the
+   slice key). Committing is what lets the next wave compound — its worktrees are cut from this new HEAD.
    - **On CONFLICT** (otto exits non-zero with a conflict message): **STOP the loop.** A same-wave
      conflict on a real file means the graph under-declared a dependency. Report the conflicting
      files and tell the user to add a `blocked_by` edge (so the slices run in different waves) then

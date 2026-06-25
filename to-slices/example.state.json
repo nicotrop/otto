@@ -1,0 +1,9 @@
+{
+  "plan": "<slug>",
+  "created": "<YYYY-MM-DD>",
+  "slices": {
+    "01-short-name": { "status": "pending", "blocked_by": [] },
+    "02-short-name": { "status": "pending", "blocked_by": ["01-short-name"] },
+    "03-short-name": { "status": "pending", "blocked_by": [] }
+  }
+}
