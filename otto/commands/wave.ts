@@ -2,10 +2,10 @@ import { PlanState, WaveGraph, runnableAfk, pendingHitl } from "../utils/state.t
 import { ensureWorktree, git } from "../utils/git.ts";
 import { type Mode, emit, ok, info } from "../utils/lib.ts";
 
-export function cmdWave(slug: string, range: string | undefined, mode: Mode, wave: number | undefined, buffer: number): void {
+export function cmdWave(slug: string, range: string | undefined, mode: Mode, wave: number | undefined, buffer: number, depth: number | undefined): void {
   const ps = new PlanState(slug);
 
-  const criticalDepth = WaveGraph.criticalDepth(ps.read(), range);
+  const criticalDepth = depth ?? WaveGraph.criticalDepth(ps.read(), range);
   const waveCap = criticalDepth + buffer;
   const waveNum = wave ?? 1;
   if (waveNum > waveCap) {

@@ -24,6 +24,7 @@ flags:
   -s, --slices <range>       slice range (e.g. 1-3,5)
   -m, --mode <mode>          worktree | inline (default: worktree)
   -b, --buffer <n>           extra waves past critical-path depth before halting (default: 2)
+  -d, --depth <n>            override the critical-path depth used for the wave cap (e.g. on resume)
   -w, --wave <n>           * wave number (positive integer)
   -L, --learning <text>    * learning note to attach on land
   -h, --help                 show this help
@@ -38,7 +39,7 @@ if (argv.includes("-h") || argv.includes("--help")) help();
 const o = parseArgs(argv);
 switch (cmd) {
   case "validate": cmdValidate(o.slug); break;
-  case "wave":     cmdWave(o.slug, o.range, o.mode, o.wave, o.buffer); break;
+  case "wave":     cmdWave(o.slug, o.range, o.mode, o.wave, o.buffer, o.depth); break;
   case "land":     cmdLand(o.slug, o.slice, o.learning); break;
   case "status":   cmdStatus(o.slug); break;
   case "list":     cmdList(o.slug, o.range, o.mode); break;

@@ -99,6 +99,12 @@ worktree left behind, and `land` picks up committed branches. `status` shows a �
 with a live worktree (work was in flight). Use `/otto reset <slug> <slice>` to scrap a stuck slice and
 start it over.
 
+The wave cap is `critical-path depth + buffer`, and depth is the **static** depth of the whole plan —
+so a resume of a mostly-done plan gets the full original budget (loose, but it never false-halts since
+the wave counter restarts at 1). To tighten the backstop on a resume, run `$OTTO status <slug>` first:
+it prints `remaining depth: <n>`, the depth of the still-unfinished subgraph. Pass that as `-d <n>`
+on the `wave` calls (`$OTTO wave <slug> -w <N> -d <n> …`) so otto halts a stuck resume sooner.
+
 Because `state.json` / `learnings.md` are uncommitted working-tree files, a resume works as long as
 the working tree survives. A `git clean -fdx` (or otherwise wiping untracked files) between runs would
 discard the plan's progress — commit `.plans/` yourself first if you need that safety.
