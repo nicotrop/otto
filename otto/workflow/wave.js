@@ -1,7 +1,7 @@
 export const meta = {
   name: 'otto-fanout',
-  description: 'Run one wave of a .plans/<slug> slice graph: fan out one agent per slice, each in its otto-made worktree, committing its work',
-  phases: [{ title: 'Run wave' }],
+  description: 'otto subagents running the current wave — one agent per slice, in parallel or inline.',
+  phases: [{ title: 'Wave' }],
 }
 
 if (typeof args === 'string') log('⚠ args arrived as a STRING, not an object — parsing it (harness quirk)')
@@ -68,10 +68,10 @@ const SCHEMA = {
 }
 
 const runOne = s =>
-  agent(buildPrompt(s), { label: s.key, phase: 'Run wave', schema: SCHEMA })
+  agent(buildPrompt(s), { label: s.key, phase: 'Wave', schema: SCHEMA })
     .then(r => ({ key: s.key, isolation: s.isolation, result: r }))
 
-phase('Run wave')
+phase('Wave')
 
 let waveResults
 if (a.mode === 'inline') {
