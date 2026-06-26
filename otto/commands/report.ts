@@ -1,4 +1,4 @@
-import { PlanState, runnableAfk, pendingHitl } from "../utils/state.ts";
+import { PlanState, WaveGraph, runnableAfk, pendingHitl } from "../utils/state.ts";
 import { git, worktreePath } from "../utils/git.ts";
 import { type Mode, type Status, info } from "../utils/lib.ts";
 
@@ -7,7 +7,7 @@ export function cmdStatus(slug: string): void {
   const glyph: Record<Status, string> = { done: "✓", review: "◉", pending: "○" };
   console.log(`\nPlan: ${slug}\n`);
   for (const [key, s] of Object.entries(plan.slices).sort()) {
-    const working = s.status === "pending" && git.worktreeExists(worktreePath(key));
+    const working = s.status === "pending" && git.worktreeExists(worktreePath(slug, key));
     const mark = working ? "◎" : glyph[s.status];
     const tail =
       working ? "  ← agent working (worktree live)"
@@ -17,7 +17,9 @@ export function cmdStatus(slug: string): void {
     console.log(`  ${mark} ${key}${tail}`);
   }
   const count = (st: Status) => Object.values(plan.slices).filter((s) => s.status === st).length;
-  console.log(`\n  ${count("done")} done  ${count("review")} review  ${count("pending")} pending\n`);
+  const total = Object.keys(plan.slices).length;
+  console.log(`\n  ${count("done")} done  ${count("review")} review  ${count("pending")} pending`);
+  console.log(`  remaining depth: ${WaveGraph.criticalDepth(plan, undefined, true)}  (${count("done")}/${total} slices done)\n`);
 }
 
 export function cmdList(slug: string, range: string | undefined, mode: Mode): void {

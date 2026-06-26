@@ -1,7 +1,7 @@
 export const meta = {
   name: 'otto-fanout',
-  description: 'Run one wave of a .plans/<slug> slice graph: fan out one agent per slice, each in its otto-made worktree, committing its work',
-  phases: [{ title: 'Run wave' }],
+  description: 'otto subagents running the current wave — one agent per slice, in parallel or inline.',
+  phases: [{ title: 'Wave' }],
 }
 
 if (typeof args === 'string') log('⚠ args arrived as a STRING, not an object — parsing it (harness quirk)')
@@ -9,19 +9,19 @@ let a
 try {
   a = (typeof args === 'string' ? JSON.parse(args) : args) || {}
 } catch (e) {
-  throw new Error(`otto fanout: args is an unparseable string (${e.message}). Pass the wave JSON as an OBJECT, not a stringified blob.`)
+  throw new Error(`otto fanout: args arrived as a string that isn't valid JSON (${e.message}). Re-invoke the Workflow tool with the full \`otto wave\` stdout JSON as the args OBJECT — copy it verbatim, don't retype or wrap it in quotes.`)
 }
 const slices = (a.slices || []).filter(Boolean)
 
 if (!slices.length) {
   const shape = `keys=[${Object.keys(a).join(',') || 'none'}]`
-  if (!a.slug) throw new Error(`otto fanout: args has no recognizable wave fields (${shape}). It probably didn't reach the script as an object.`)
+  if (!a.slug) throw new Error(`otto fanout: args is missing required wave fields (${shape}). Re-invoke the Workflow tool with the ENTIRE \`otto wave\` stdout JSON as the args object — a partial or paraphrased copy drops fields.`)
   log(`Wave is empty (${shape}) — graph drained, blocked, or only HITL remains.`)
   return { ran: [], halt_hitl: a.halt_hitl || [] }
 }
 
 function workdir(s) {
-  return s.isolation === 'worktree' ? `${a.repo}/.worktrees/${s.key}` : a.repo
+  return s.isolation === 'worktree' ? `${a.repo}/.plans/.worktrees/${a.slug}/${s.key}` : a.repo
 }
 
 function buildPrompt(s) {
@@ -41,14 +41,16 @@ Read these from disk BEFORE coding — they are the source of truth:
 Load the skills the spec names and follow this project's CLAUDE.md / .claude/rules conventions.
 
 Hard constraints:
-- Implement the slice end to end and satisfy its acceptance criteria.
-- Run the validation steps the spec lists. Fix all errors (warnings ok).
+- Implement the slice end to end and make every acceptance criterion in the spec actually pass.
+- Run the validation steps the slice's spec lists (typecheck, tests, linters, and other) and read the output. Fix every error your changes introduced; warnings are ok.
+- A slice is not done until its validation runs clean of new errors. If you cannot get it clean, set validationClean=false and explain why in notes, do not report it as passing.
+- If the slice is too large to finish and verify in this single pass, stop, set validationClean=false, and say so in notes rather than committing a half-done slice. otto would rather you halt than land broken code.
 ${s.isolation === 'worktree'
-  ? `- COMMIT your finished work in this worktree (a single \`git commit\`, message "${s.key}"). Do NOT push and do NOT open a PR. otto lands it from the main tree.`
+  ? `- Only once validation is clean, COMMIT your finished work in this worktree (a single \`git commit\`, message "${s.key}"). Do NOT push and do NOT open a PR. otto lands it from the main tree.`
   : `- Do NOT commit, push, or open a PR. Leave your work as changes in the working tree — otto marks it done.`}
 - You cannot do rendered-browser QA. Code + static validation only.
 
-Return STRICT JSON per schema: the files you changed, a short summary, whether validation passed, and terse actionable learnings for the slices that follow (gotchas, interface contracts, decisions you made).`
+Return STRICT JSON per schema: the files you changed, a short summary, whether validation TRULY passed (you ran it and saw it clean), the exact validation commands you ran, and terse actionable learnings for the slices that follow (gotchas, interface contracts, decisions you made).`
 }
 
 const SCHEMA = {
@@ -57,18 +59,19 @@ const SCHEMA = {
   properties: {
     changedFiles: { type: 'array', items: { type: 'string' } },
     summary: { type: 'string' },
-    validationClean: { type: 'boolean' },
+    validationClean: { type: 'boolean', description: 'true ONLY if you actually ran the spec validation and saw it pass clean' },
+    validationCommands: { type: 'array', items: { type: 'string' }, description: 'the exact commands you ran to validate (empty if none ran)' },
     learnings: { type: 'string' },
-    notes: { type: 'string' },
+    notes: { type: 'string', description: 'if validationClean is false, why' },
   },
-  required: ['changedFiles', 'summary', 'validationClean'],
+  required: ['changedFiles', 'summary', 'validationClean', 'validationCommands'],
 }
 
 const runOne = s =>
-  agent(buildPrompt(s), { label: s.key, phase: 'Run wave', schema: SCHEMA })
+  agent(buildPrompt(s), { label: s.key, phase: 'Wave', schema: SCHEMA })
     .then(r => ({ key: s.key, isolation: s.isolation, result: r }))
 
-phase('Run wave')
+phase('Wave')
 
 let waveResults
 if (a.mode === 'inline') {
@@ -81,7 +84,8 @@ if (a.mode === 'inline') {
 }
 
 for (const wr of waveResults) {
-  if (!wr || !wr.result) log(`⚠ ${wr && wr.key} returned nothing — stays pending (not landed); its dependents stay blocked.`)
+  if (!wr || !wr.result) { log(`⚠ ${wr && wr.key} returned nothing — stays pending (not landed); its dependents stay blocked.`); continue }
+  if (wr.result.validationClean === false) log(`⚠ ${wr.key} reported validationClean=false, do not land it as done. Reason: ${wr.result.notes || '(none given)'}`)
 }
 
 return {

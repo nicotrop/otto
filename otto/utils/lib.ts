@@ -14,6 +14,12 @@ export interface PlanFile {
   [k: string]: unknown;
 }
 
+export interface Problem {
+  severity: "error" | "warn";
+  slice?: string;
+  message: string;
+}
+
 export interface RunnableSlice {
   key: string;
   type: SliceType;
@@ -27,12 +33,18 @@ export interface Args {
   range?: string;
   mode: Mode;
   learning?: string;
+  wave?: number;
+  buffer: number;
+  depth?: number;
 }
 
 export function parseArgs(args: string[]): Args {
   let range: string | undefined;
   let learning: string | undefined;
   let mode: Mode = "worktree";
+  let wave: number | undefined;
+  let buffer = 2;
+  let depth: number | undefined;
   const pos: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -44,11 +56,23 @@ export function parseArgs(args: string[]): Args {
       range = args[++i];
     } else if (a === "--learning" || a === "-L") {
       learning = args[++i];
+    } else if (a === "--wave" || a === "-w") {
+      const n = Number(args[++i]);
+      if (!Number.isInteger(n) || n < 1) die(`--wave must be a positive integer, got: ${args[i]}`);
+      wave = n;
+    } else if (a === "--buffer" || a === "-b") {
+      const n = Number(args[++i]);
+      if (!Number.isInteger(n) || n < 0) die(`--buffer must be a non-negative integer, got: ${args[i]}`);
+      buffer = n;
+    } else if (a === "--depth" || a === "-d") {
+      const n = Number(args[++i]);
+      if (!Number.isInteger(n) || n < 1) die(`--depth must be a positive integer, got: ${args[i]}`);
+      depth = n;
     } else {
       pos.push(a);
     }
   }
-  return { slug: pos[0], slice: pos[1], range, mode, learning };
+  return { slug: pos[0], slice: pos[1], range, mode, learning, wave, buffer, depth };
 }
 
 export function info(m: string) { console.error(`▸ ${m}`); }

@@ -20,11 +20,7 @@ If you have not already explored the codebase, do so to understand the current s
 
 ### 3. Detect project skills
 
-Scan the project to determine which skills implementing agents should use for validation. Look for:
-
-- **Shopify theme** (contains `shopify.theme.toml`, `sections/`, `templates/` with `.liquid` files): recommend `shopify-liquid`, `shopify-liquid-themes`, `liquid-theme-standards`
-- **TypeScript/JavaScript** (contains `tsconfig.json`, `package.json`): recommend running typecheck
-- **Other patterns**: adapt based on what you find
+Scan the project for its stack and tooling, and note which skills (if any) the implementing agents should load for validation on each slice. Detect from the project's own signals — config files, manifests, lockfiles, existing test/lint/typecheck commands — and match against the skills installed in this environment. Record what you find so step 6 can name the right skills per slice. If the project has no relevant skills, the slice's validation is just its own native checks (build, test, lint).
 
 ### 4. Draft vertical slices
 
@@ -60,68 +56,44 @@ Iterate until the user approves the breakdown.
 
 For each approved slice, write a markdown file to `.plans/<slug>/slices/`. Use zero-padded numbering: `01-short-name.md`, `02-short-name.md`, etc.
 
-Write slices in dependency order (blockers first) so numbering reflects execution order.
-
-Use this template for each slice file:
-
-<slice-template>
-# <Slice title>
-
-**Type:** HITL | AFK
-
-## What to build
-
-A concise description of this vertical slice. Describe the end-to-end behavior, not layer-by-layer implementation.
-
-Avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it here and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
-
-## Acceptance criteria
-
-- [ ] Criterion 1
-- [ ] Criterion 2
-- [ ] Criterion 3
-
-## Blocked by
-
-- `01-slice-name` (if any)
-
-Or "None — can start immediately" if no blockers.
-
-## Skills
-
-List of skills the implementing agent should load for this slice. These provide reference documentation and validation tooling.
-
-<!-- Example for Shopify theme work: -->
-<!-- - `shopify-liquid` — search docs before coding, validate all changed .liquid files before marking review -->
-<!-- - `shopify-liquid-themes` — schema, LiquidDoc, translation patterns -->
-<!-- - `liquid-theme-standards` — BEM, design tokens, web components, CSS/JS standards -->
-
-## Validation
-
-Steps the implementing agent must complete before marking this slice as `review`:
-
-1. Run validation tooling from the skills listed above (e.g., `shopify-liquid` validate.mjs on all changed files)
-2. Fix all errors — warnings are acceptable
-3. Ensure acceptance criteria are met
-
-</slice-template>
+Write slices in dependency order (blockers first) so numbering reflects execution order. Follow
+[SLICE-TEMPLATE.md](SLICE-TEMPLATE.md) for the structure of each file.
 
 ### 7. Update state.json
 
-Update `.plans/<slug>/state.json` to include all slices:
+Update `.plans/<slug>/state.json` to include all slices, following the shape in
+[example.state.json](example.state.json) — `slices` keyed by slice name, each with a `status` and a
+`blocked_by` array naming its blocker slices.
 
-```json
-{
-  "plan": "<slug>",
-  "created": "<YYYY-MM-DD>",
-  "slices": {
-    "01-short-name": { "status": "pending", "blocked_by": [] },
-    "02-short-name": { "status": "pending", "blocked_by": ["01-short-name"] },
-    "03-short-name": { "status": "pending", "blocked_by": [] }
-  }
-}
-```
-
-Valid statuses: `pending`, `in-progress`, `review`, `done`.
+Valid statuses: `pending`, `review`, `done`. (otto's `Status` type is exactly these three — a
+slice authored with any other status, e.g. `in-progress`, is `!== "pending"` and so is silently
+never picked up as runnable.)
 
 Do NOT modify `prd.md` or any other existing files in the plan folder.
+
+### 8. Validate the plan (blocking auto-fix loop)
+
+After `state.json` is written, validate the whole plan before showing the user the result — a
+broken plan must never be the visible output of slicing.
+
+**Resolve the validator.** otto is the sibling skill of this one: from this skill's own directory
+(the "Base directory for this skill" path from the invocation), otto's CLI is
+`../otto/index.ts`. Let `OTTO="<that path>"` — the same way otto's `LOOP.md` resolves `$OTTO` to
+its own `index.ts`. If `../otto/index.ts` does not exist (otto genuinely isn't installed), warn
+`"validator unavailable, skipping"` and leave `state.json` as written — do NOT fail slicing.
+
+**Run the loop:**
+
+1. Run `$OTTO validate <slug>`.
+2. **On exit 1** (errors): read the `error: <slice>: <msg>` lines from stderr, fix the cause in
+   `state.json` and/or the offending slice `.md` files (e.g. a bad `blocked_by` reference, a
+   missing/invalid `**Type:**` line, a malformed `state.json`), then re-run `$OTTO validate <slug>`.
+   **Repeat until validate exits 0, capped at 3 attempts.** If it still fails after the 3rd
+   attempt, show the user the remaining `error:` problems and **stop** — do not silently ship a
+   broken plan.
+3. **Warnings do NOT trigger the loop.** validate exits 0 for warnings (e.g. `warn: <slice>: ` for
+   an orphan `.md` file with no `state.json` entry). Print them for the user's awareness, but a
+   warning is surfaced, not blocked on.
+
+Only after validate exits 0 (or warnings-only, or otto is not installed) present the finished
+breakdown to the user.

@@ -38,6 +38,7 @@ dependency graph in `state.json`.
 | `/otto list <slug> [-s range] [-m …]` | Show the next wave (AFK to run + HITL that would halt). |
 | `/otto reset <slug> <slice>` | Reset a slice to pending, clean its worktree. |
 | `/otto done <slug> <slice>` | Force-mark a slice done, clean its worktree. |
+| `/otto validate <slug>` | Check `state.json` + slice files against otto's data model and run assumptions; report all problems (errors + warnings) and exit non-zero on any error. |
 
 The only positional is `<slug>` (plus `<slice>` for reset/done). Selection and mode are flags:
 
@@ -47,7 +48,8 @@ The only positional is `<slug>` (plus `<slice>` for reset/done). Selection and m
   - `inline` — slices run **sequentially in the main tree**, no extra checkouts. Use when the
     user doesn't want worktrees.
 
-For `status`, `list`, `reset`, `done`: run `$OTTO <cmd> …` and report the output.
+For `status`, `list`, `reset`, `done`, `validate`: run `$OTTO <cmd> …` and report the output —
+for `validate`, report the `error:`/`warn:` lines it prints to stderr and its exit status.
 
 ## Running a plan
 

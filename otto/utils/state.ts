@@ -1,7 +1,17 @@
-import { existsSync, readFileSync, writeFileSync, mkdtempSync, renameSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { type Status, type SliceType, type Mode, type PlanFile, type RunnableSlice, die } from "./lib.ts";
+import { existsSync, readFileSync, writeFileSync, renameSync } from "node:fs";
+import { join, dirname, basename } from "node:path";
+import { type Status, type SliceType, type Mode, type PlanFile, type RunnableSlice, type Problem, die } from "./lib.ts";
+
+export function parseSliceType(spec: string): SliceType | null {
+  const t = spec.match(/\*\*Type:\*\*\s*(\w+)/i)?.[1]?.toUpperCase();
+  return t === "AFK" || t === "HITL" ? t : null;
+}
+
+function writeFileAtomic(file: string, contents: string): void {
+  const tmp = join(dirname(file), `.${basename(file)}.otto-tmp`);
+  writeFileSync(tmp, contents);
+  renameSync(tmp, file);
+}
 
 export class PlanState {
   readonly slug: string;
@@ -23,9 +33,7 @@ export class PlanState {
   }
 
   private write(plan: PlanFile): void {
-    const tmp = join(mkdtempSync(join(tmpdir(), "otto-")), "state.json");
-    writeFileSync(tmp, JSON.stringify(plan, null, 2) + "\n");
-    renameSync(tmp, this.stateFile);
+    writeFileAtomic(this.stateFile, JSON.stringify(plan, null, 2) + "\n");
   }
 
   setStatus(slice: string, status: Status): void {
@@ -39,8 +47,7 @@ export class PlanState {
     const path = join(this.dir, "slices", `${key}.md`);
     if (!existsSync(path)) die(`slice spec not found: ${path}`);
     const spec = readFileSync(path, "utf8");
-    const m = spec.match(/\*\*Type:\*\*\s*(HITL|AFK)/i);
-    return { spec, type: (m?.[1]?.toUpperCase() as SliceType) ?? "AFK" };
+    return { spec, type: parseSliceType(spec) ?? "AFK" };
   }
 
   appendLearnings(entries: { key: string; learnings: string }[]): void {
@@ -53,7 +60,7 @@ export class PlanState {
     const existing = existsSync(this.learningsFile)
       ? readFileSync(this.learningsFile, "utf8")
       : `# Learnings — ${this.slug}\n\nNotes left by slice agents for the agents that follow.\n`;
-    writeFileSync(this.learningsFile, existing + block);
+    writeFileAtomic(this.learningsFile, existing + block);
   }
 }
 
@@ -66,6 +73,50 @@ export const WaveGraph = {
       .sort();
   },
 
+  validate(plan: PlanFile, sliceKeys: string[], sliceTypes: Record<string, SliceType | null>): Problem[] {
+    const problems: Problem[] = [];
+    const slices = plan.slices ?? {};
+    const keySet = new Set(Object.keys(slices));
+    const fileSet = new Set(sliceKeys);
+
+    for (const [key, s] of Object.entries(slices)) {
+      if (s?.status !== "pending" && s?.status !== "review" && s?.status !== "done") {
+        problems.push({ severity: "error", slice: key, message: `invalid status "${s?.status}" (must be pending | review | done)` });
+      }
+
+      const deps = s?.blocked_by;
+      if (!Array.isArray(deps) || !deps.every((d) => typeof d === "string")) {
+        problems.push({ severity: "error", slice: key, message: `blocked_by must be an array of strings` });
+      } else {
+        for (const dep of deps) {
+          if (!keySet.has(dep)) {
+            problems.push({ severity: "error", slice: key, message: `blocked_by references unknown slice "${dep}"` });
+          }
+        }
+      }
+
+      if (!fileSet.has(key)) {
+        problems.push({ severity: "error", slice: key, message: `no matching slice file slices/${key}.md` });
+      }
+    }
+
+    for (const cycle of findCycles(slices, keySet)) {
+      problems.push({ severity: "error", slice: cycle[0], message: `dependency cycle: ${cycle.join(" -> ")}` });
+    }
+
+    for (const key of sliceKeys) {
+      if (keySet.has(key) && sliceTypes[key] == null) {
+        problems.push({ severity: "error", slice: key, message: `missing or unparseable **Type:** line (must be HITL or AFK)` });
+      }
+
+      if (!keySet.has(key)) {
+        problems.push({ severity: "warn", slice: key, message: `slice file has no entry in state.json (never runs)` });
+      }
+    }
+
+    return problems;
+  },
+
   inRange(keys: string[], range: string | undefined): string[] {
     if (!range) return keys;
     const wanted = parseRange(range);
@@ -74,7 +125,65 @@ export const WaveGraph = {
       return Number.isFinite(n) && wanted.has(n);
     });
   },
+
+  criticalDepth(plan: PlanFile, range: string | undefined, excludeDone = false): number {
+    const slices = plan.slices ?? {};
+    const inScope = new Set(
+      WaveGraph.inRange(Object.keys(slices), range).filter(
+        (k) => !excludeDone || slices[k]?.status !== "done",
+      ),
+    );
+
+    const memo = new Map<string, number>();
+    const depth = (k: string): number => {
+      const cached = memo.get(k);
+      if (cached !== undefined) return cached;
+      const deps = (slices[k]?.blocked_by ?? []).filter((d) => inScope.has(d));
+      const d = deps.length ? 1 + Math.max(...deps.map(depth)) : 1;
+      memo.set(k, d);
+      return d;
+    };
+
+    let max = 0;
+    for (const k of inScope) max = Math.max(max, depth(k));
+    return max;
+  },
 };
+
+function findCycles(slices: PlanFile["slices"], keySet: Set<string>): string[][] {
+  const cycles: string[][] = [];
+  const seen = new Set<string>();
+  const state = new Map<string, 0 | 1 | 2>();
+  const stack: string[] = [];
+
+  const dep = (k: string): string[] => {
+    const d = slices[k]?.blocked_by;
+    return Array.isArray(d) ? d.filter((x) => typeof x === "string" && keySet.has(x)) : [];
+  };
+
+  const visit = (k: string): void => {
+    state.set(k, 1);
+    stack.push(k);
+    for (const next of dep(k)) {
+      if (state.get(next) === 1) {
+        const at = stack.indexOf(next);
+        const cycle = stack.slice(at);
+        const sig = [...cycle].sort().join(" ");
+        if (!seen.has(sig)) {
+          seen.add(sig);
+          cycles.push([...cycle, next]);
+        }
+      } else if (!state.get(next)) {
+        visit(next);
+      }
+    }
+    stack.pop();
+    state.set(k, 2);
+  };
+
+  for (const k of Object.keys(slices).sort()) if (!state.get(k)) visit(k);
+  return cycles;
+}
 
 function parseRange(expr: string): Set<number> {
   const out = new Set<number>();
