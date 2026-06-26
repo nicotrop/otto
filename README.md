@@ -37,7 +37,7 @@ Drop the folders in your Claude Code skills directory (otto is Claude Code only 
 
 ## How it works
 
-A plan is `.plans/<slug>/`: a `state.json` keyed by slice with `blocked_by` edges, plus a markdown spec per slice. Each slice is a tracer bullet — a thin vertical cut through the whole system, not a horizontal layer — so it can build and verify on its own before anything depends on it. otto topologically sorts the graph and runs each wave of unblocked slices in parallel, one git worktree per slice off current HEAD. Each slice lands as a commit (code, state bump, and the learnings it leaves for later slices); the next wave branches off that, so work compounds.
+A plan is `.plans/<slug>/`: a `state.json` keyed by slice with `blocked_by` edges, plus a markdown spec per slice. otto topologically sorts the graph and runs each wave of unblocked slices in parallel, one git worktree per slice off current HEAD. Each slice lands as a commit (code, state bump, and the learnings it leaves for later slices); the next wave branches off that, so work compounds.
 
 ```
 validate → wave → land    (repeat until the graph drains or hits a slice that needs you)
