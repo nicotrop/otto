@@ -1,0 +1,12 @@
+{
+  "plan": "basic",
+  "created": "2026-06-26",
+  "source_docs": [],
+  "slices": {
+    "01-seed": { "status": "pending", "blocked_by": [] },
+    "02-alpha": { "status": "pending", "blocked_by": ["01-seed"] },
+    "03-beta": { "status": "pending", "blocked_by": ["01-seed"] },
+    "04-merge": { "status": "pending", "blocked_by": ["02-alpha", "03-beta"] },
+    "05-review": { "status": "pending", "blocked_by": ["04-merge"] }
+  }
+}

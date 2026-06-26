@@ -1,0 +1,9 @@
+{
+  "plan": "conflict",
+  "created": "2026-06-26",
+  "source_docs": [],
+  "slices": {
+    "01-edit-top": { "status": "pending", "blocked_by": [] },
+    "02-edit-top-too": { "status": "pending", "blocked_by": [] }
+  }
+}

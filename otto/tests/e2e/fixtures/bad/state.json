@@ -1,0 +1,13 @@
+{
+  "plan": "bad",
+  "created": "2026-06-26",
+  "source_docs": [],
+  "slices": {
+    "01-bad-status": { "status": "in-progress", "blocked_by": [] },
+    "02-dangling-dep": { "status": "pending", "blocked_by": ["99-does-not-exist"] },
+    "03-cycle-a": { "status": "pending", "blocked_by": ["04-cycle-b"] },
+    "04-cycle-b": { "status": "pending", "blocked_by": ["03-cycle-a"] },
+    "05-no-type": { "status": "pending", "blocked_by": [] },
+    "06-missing-file": { "status": "pending", "blocked_by": [] }
+  }
+}

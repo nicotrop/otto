@@ -1,3 +1,10 @@
 .worktrees/
 .DS_Store
 node_modules/
+tests/
+CONTEXT.md 
+docs/
+.plans/
+lessons/
+learning-records/
+otto/tests/e2e/sandbox/
