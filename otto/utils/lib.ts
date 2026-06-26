@@ -34,6 +34,7 @@ export interface Args {
   mode: Mode;
   learning?: string;
   wave?: number;
+  buffer: number;
 }
 
 export function parseArgs(args: string[]): Args {
@@ -41,6 +42,7 @@ export function parseArgs(args: string[]): Args {
   let learning: string | undefined;
   let mode: Mode = "worktree";
   let wave: number | undefined;
+  let buffer = 2;
   const pos: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -56,11 +58,15 @@ export function parseArgs(args: string[]): Args {
       const n = Number(args[++i]);
       if (!Number.isInteger(n) || n < 1) die(`--wave must be a positive integer, got: ${args[i]}`);
       wave = n;
+    } else if (a === "--buffer" || a === "-b") {
+      const n = Number(args[++i]);
+      if (!Number.isInteger(n) || n < 0) die(`--buffer must be a non-negative integer, got: ${args[i]}`);
+      buffer = n;
     } else {
       pos.push(a);
     }
   }
-  return { slug: pos[0], slice: pos[1], range, mode, learning, wave };
+  return { slug: pos[0], slice: pos[1], range, mode, learning, wave, buffer };
 }
 
 export function info(m: string) { console.error(`▸ ${m}`); }

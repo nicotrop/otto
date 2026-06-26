@@ -1,6 +1,6 @@
 import { PlanState } from "../utils/state.ts";
 import {
-  branchName, worktreePath, removeWorktree, stripPlanEdits, commitSliceWork, git,
+  branchName, worktreePath, removeWorktree, commitSliceWork, git,
 } from "../utils/git.ts";
 import { ok, info, die } from "../utils/lib.ts";
 import { mkdtempSync, writeFileSync } from "node:fs";
@@ -23,8 +23,7 @@ export function cmdLand(slug: string, slice: string, learning?: string): void {
   const base = git.tryRun(["merge-base", "HEAD", branch]);
   if (!base) die(`cannot find common ancestor with ${branch}`);
 
-  git.tryRun(["worktree", "remove", worktreePath(slice), "--force"]);
-  stripPlanEdits(branch, base);
+  git.tryRun(["worktree", "remove", worktreePath(slug, slice), "--force"]);
 
   if (base !== head) {
     info(`${slice}: rebasing branch onto current HEAD…`);
@@ -49,7 +48,11 @@ export function cmdLand(slug: string, slice: string, learning?: string): void {
     const patch = join(mkdtempSync(join(tmpdir(), "otto-")), `${slice}.diff`);
     writeFileSync(patch, diff + "\n");
     if (git.tryRun(["apply", patch]) === null) {
-      die(`patch for ${slice} failed to apply cleanly — review manually before landing`);
+      if (git.tryRun(["apply", "--reverse", "--check", patch]) !== null) {
+        info(`${slice}: changes already present — skipping apply`);
+      } else {
+        die(`patch for ${slice} failed to apply cleanly — review manually before landing`);
+      }
     }
   }
   ps.setStatus(slice, "done");

@@ -9,19 +9,19 @@ let a
 try {
   a = (typeof args === 'string' ? JSON.parse(args) : args) || {}
 } catch (e) {
-  throw new Error(`otto fanout: args is an unparseable string (${e.message}). Pass the wave JSON as an OBJECT, not a stringified blob.`)
+  throw new Error(`otto fanout: args arrived as a string that isn't valid JSON (${e.message}). Re-invoke the Workflow tool with the full \`otto wave\` stdout JSON as the args OBJECT — copy it verbatim, don't retype or wrap it in quotes.`)
 }
 const slices = (a.slices || []).filter(Boolean)
 
 if (!slices.length) {
   const shape = `keys=[${Object.keys(a).join(',') || 'none'}]`
-  if (!a.slug) throw new Error(`otto fanout: args has no recognizable wave fields (${shape}). It probably didn't reach the script as an object.`)
+  if (!a.slug) throw new Error(`otto fanout: args is missing required wave fields (${shape}). Re-invoke the Workflow tool with the ENTIRE \`otto wave\` stdout JSON as the args object — a partial or paraphrased copy drops fields.`)
   log(`Wave is empty (${shape}) — graph drained, blocked, or only HITL remains.`)
   return { ran: [], halt_hitl: a.halt_hitl || [] }
 }
 
 function workdir(s) {
-  return s.isolation === 'worktree' ? `${a.repo}/.worktrees/${s.key}` : a.repo
+  return s.isolation === 'worktree' ? `${a.repo}/.plans/.worktrees/${a.slug}/${s.key}` : a.repo
 }
 
 function buildPrompt(s) {

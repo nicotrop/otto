@@ -7,7 +7,7 @@ export function cmdStatus(slug: string): void {
   const glyph: Record<Status, string> = { done: "✓", review: "◉", pending: "○" };
   console.log(`\nPlan: ${slug}\n`);
   for (const [key, s] of Object.entries(plan.slices).sort()) {
-    const working = s.status === "pending" && git.worktreeExists(worktreePath(key));
+    const working = s.status === "pending" && git.worktreeExists(worktreePath(slug, key));
     const mark = working ? "◎" : glyph[s.status];
     const tail =
       working ? "  ← agent working (worktree live)"
