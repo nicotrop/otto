@@ -2,7 +2,6 @@
 import { parseArgs, die } from "./utils/lib.ts";
 import { cmdWave } from "./commands/wave.ts";
 import { cmdLand } from "./commands/land.ts";
-import { cmdSnapshot } from "./commands/snapshot.ts";
 import { cmdStatus, cmdList } from "./commands/report.ts";
 import { cmdReset, cmdDone } from "./commands/mark.ts";
 import { cmdValidate } from "./commands/validate.ts";
@@ -12,8 +11,7 @@ const HELP = `otto — slice-based plan runner
 usage: otto <command> [<slug>] [<slice>] [flags]
 
 commands:
-  snapshot <slug>          * capture a snapshot for the plan
-  validate <slug>            validate the plan file
+  validate <slug>          * validate the plan before a run (run-loop step 0)
   wave <slug>              * run the next wave of runnable slices
   land <slug> <slice>      * land a completed slice
   status <slug>              show plan status
@@ -39,7 +37,6 @@ if (cmd === undefined || cmd === "help" || cmd === "-h" || cmd === "--help") hel
 if (argv.includes("-h") || argv.includes("--help")) help();
 const o = parseArgs(argv);
 switch (cmd) {
-  case "snapshot": cmdSnapshot(o.slug); break;
   case "validate": cmdValidate(o.slug); break;
   case "wave":     cmdWave(o.slug, o.range, o.mode, o.wave, o.buffer); break;
   case "land":     cmdLand(o.slug, o.slice, o.learning); break;
@@ -49,6 +46,6 @@ switch (cmd) {
   case "done":     cmdDone(o.slug, o.slice); break;
   default:
     die(`unknown command: ${cmd}\n` +
-        `commands: snapshot validate wave land status list reset done help\n` +
+        `commands: validate wave land status list reset done help\n` +
         `run 'otto help' or 'otto -h' for usage`);
 }

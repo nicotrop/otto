@@ -6,10 +6,10 @@ all slices, `worktree`) through **every** `start`/`init` call so they agree.
 Let `OTTO="<this-skill-dir>/index.ts"` (the skill's own directory — the "Base directory for this
 skill" path from the invocation).
 
-**Step 0 — once, before anything else:** run `$OTTO snapshot <slug>`. It **validates the plan** (same
-path as `$OTTO validate`): on any error it prints the `error:` lines to stderr, exits non-zero, and
-stops the run — an invalid, hand-edited plan can't start. Warnings (e.g. an orphan slice `.md`) print
-but don't block. otto does **not** commit `.plans/`; it stays as dirty working-tree files for the run
+**Step 0 — once, before anything else:** run `$OTTO validate <slug>`. On any error it prints the
+`error:` lines to stderr, exits non-zero, and stops the run — an invalid, hand-edited plan can't start.
+Warnings (e.g. an orphan slice `.md`) print but don't block. otto does **not** commit `.plans/`; it
+stays as dirty working-tree files for the run
 and is copied into each worktree at wave time (see below). If the user wants the plan in their history,
 they commit `.plans/` themselves.
 

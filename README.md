@@ -40,7 +40,7 @@ Drop the folders in your Claude Code skills directory (otto is Claude Code only 
 A plan is `.plans/<slug>/`: a `state.json` keyed by slice with `blocked_by` edges, plus a markdown spec per slice. otto topologically sorts the graph and runs each wave of unblocked slices in parallel, one git worktree per slice off current HEAD. Each slice lands as a commit (code, state bump, and the learnings it leaves for later slices); the next wave branches off that, so work compounds.
 
 ```
-snapshot → wave → land    (repeat until the graph drains or hits a slice that needs you)
+validate → wave → land    (repeat until the graph drains or hits a slice that needs you)
 ```
 
 otto never pushes, so review the stack afterward and squash/amend as you like. Scope a run to stop after a range:

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { WaveGraph, parseSliceType } from "../utils/state.ts";
-import { type PlanFile, type Problem, type SliceType } from "../utils/lib.ts";
+import { ok, type PlanFile, type Problem, type SliceType } from "../utils/lib.ts";
 
 export function collectProblems(slug: string): Problem[] {
   const dir = join(".plans", slug);
@@ -48,5 +48,7 @@ export function runValidate(slug: string): number {
 }
 
 export function cmdValidate(slug: string): void {
-  process.exit(runValidate(slug));
+  const code = runValidate(slug);
+  if (code === 0) ok(`validated ${slug}`);
+  process.exit(code);
 }
