@@ -18,7 +18,7 @@ to-plan / to-slices          →   write slices to .plans/   (local files, not G
 
 So `to-plan` / `to-slices` (bundled here) do the same job but write `.plans/` files instead of issues. otto is the execution half that runs them.
 
-It compounds on both: Matt's grilling and tracer-bullet slices arranged into a dependency graph for the plan, Ralph's loop-until-done patterns for the run. Then it leans on that graph to run a whole wave of independent slices in parallel instead of one task at a time. Now that [Claude Code workflows](https://www.claude.com/product/claude-code) have dropped, it fans each wave out as a workflow, one subagent per slice. Everything stays local: plans are files in `.plans/`, the loop is a workflow, the state is git, so there's no issue tracker, no API token, and no separate harness to run.
+It compounds on both: Matt's grilling and tracer-bullet slices arranged into a dependency graph for the plan, Ralph's loop-until-done patterns for the run. Then it leans on that graph to run a whole wave of independent slices in parallel instead of one task at a time. Now that [Claude Code workflows](https://code.claude.com/docs/en/workflows) have dropped, it fans each wave out as a workflow, one subagent per slice. Everything stays local: plans are files in `.plans/`, the loop is a workflow, the state is git, so there's no issue tracker, no API token, and no separate harness to run.
 
 ## Install
 
