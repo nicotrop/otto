@@ -1,13 +1,13 @@
-# wave — domain glossary
+# otto — domain glossary
 
-The shared vocabulary for wave, a slice-plan runner for Claude Code. Glossary only — no
+The shared vocabulary for otto, a slice-plan runner for Claude Code. Glossary only — no
 implementation details.
 
 ## plan
 
 A unit of work to run to completion, living at `.plans/<slug>/`: a PRD, a set of slice specs, a
 `state.json` dependency graph, and a `learnings.md`. The plan is the **contract** between the
-`/to-plan` → `/to-slices` → `/wave run` stages.
+`/to-plan` → `/to-slices` → `/otto run` stages.
 
 ## slice
 
@@ -17,7 +17,7 @@ a spec (`slices/NN.md`), a status, and `blocked_by` edges to its prerequisite sl
 
 ## wave
 
-The set of slices that are unblocked at one moment — all their `blocked_by` slices are `done`. wave
+The set of slices that are unblocked at one moment — all their `blocked_by` slices are `done`. otto
 runs a whole wave at once.
 
 ## critical depth
@@ -29,23 +29,23 @@ run. (See ADR 0004.)
 
 ## wave cap
 
-The non-progress backstop: wave halts the loop when the per-run wave counter passes
+The non-progress backstop: otto halts the loop when the per-run wave counter passes
 `critical depth + buffer`. A healthy run drains one depth-layer per wave and never reaches the cap;
 a run spinning on a stuck frontier climbs past it and halts. `buffer` (`--buffer`/`-b`, default 2) is
 user slack for retries. On a **resume**, the loop tightens the cap by passing `--depth`/`-d` with the
-**remaining** (not-`done`) depth from `wave status`. (See ADR 0004.)
+**remaining** (not-`done`) depth from `otto status`. (See ADR 0004.)
 
 ## worktree seeding
 
 Making a slice's spec and the current learnings **present on disk inside the isolated worktree** an
-agent runs in. wave seeds by **copying** the main-tree `.plans/<slug>` into each fresh worktree, so
-seeding is independent of git. wave never commits `.plans/` — bookkeeping lives as dirty working-tree
+agent runs in. otto seeds by **copying** the main-tree `.plans/<slug>` into each fresh worktree, so
+seeding is independent of git. otto never commits `.plans/` — bookkeeping lives as dirty working-tree
 files for the run; a user who wants the plan in history commits it themselves. (See ADR 0001.)
 
 ## compounding
 
-Each landed wave's learnings flow forward into the next wave. The mechanism: wave writes learnings to
-the **main-tree** `learnings.md` (wave is the single writer, via `land -L`), and the next wave's
+Each landed wave's learnings flow forward into the next wave. The mechanism: otto writes learnings to
+the **main-tree** `learnings.md` (otto is the single writer, via `land -L`), and the next wave's
 worktrees are seeded by **copying** that updated main tree — so wave N+1 reads what wave N left.
 Compounding depends on **presence + propagation of learnings**, not on the plan being committed. Slice
 *code* still commits per wave (so the next worktree, cut from HEAD, contains prior code); only plan

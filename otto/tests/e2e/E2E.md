@@ -1,6 +1,6 @@
-# wave e2e tests
+# otto e2e tests
 
-Fast, real-agent end-to-end tests for the wave loop. Each "slice" does a trivial file edit
+Fast, real-agent end-to-end tests for the otto wave loop. Each "slice" does a trivial file edit
 (create/append a line), so a full multi-wave run finishes in a couple of minutes instead of the
 ~40+ a real codebase plan takes — while still exercising the true `validate → wave → land` path
 through real subagents and real git worktrees.
@@ -13,13 +13,13 @@ tests/e2e/
     basic/          5-slice graph: inline wave, parallel worktree wave, land+rebase, HITL halt
     conflict/       two same-wave slices edit the same line → land must hard-stop
     bad/            malformed plan → validate must reject (5 distinct error classes)
-  sandbox/          throwaway git repo the tests drive wave against (gitignored from the skill repo)
+  sandbox/          throwaway git repo the tests drive otto against (gitignored from the skill repo)
   reset-sandbox.sh  resets sandbox to baseline + seeds a chosen fixture's plan into .plans/
   E2E.md            this file
 ```
 
-`WAVE=/Users/nico/Documents/skills/otto/skills/wave/index.ts` and run it with
-`node --experimental-strip-types --no-warnings "$WAVE" …`.
+`OTTO=/Users/nico/Documents/skills/otto/otto/index.ts` and run it with
+`node --experimental-strip-types --no-warnings "$OTTO" …`.
 
 The **wave** step must go through the **Workflow tool** (it fans out real subagents), so these tests
 are run by Claude following the steps below — not a single shell script. Everything except the wave
@@ -27,7 +27,7 @@ fan-out is plain shell and fully deterministic.
 
 ## Reset
 
-`./reset-sandbox.sh <fixture>` — resets the sandbox to its baseline commit, removes any wave
+`./reset-sandbox.sh <fixture>` — resets the sandbox to its baseline commit, removes any otto
 worktrees/branches from a prior run, wipes untracked run output, and copies `fixtures/<fixture>/`
 into `sandbox/.plans/<slug>/` (slug = the plan's `state.json` "plan" field). The sandbox baseline
 tracks `shared.txt`, `README.md`, `.gitignore`; only `.plans/` is gitignored inside the sandbox

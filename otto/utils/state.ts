@@ -8,7 +8,7 @@ export function parseSliceType(spec: string): SliceType | null {
 }
 
 function writeFileAtomic(file: string, contents: string): void {
-  const tmp = join(dirname(file), `.${basename(file)}.wave-tmp`);
+  const tmp = join(dirname(file), `.${basename(file)}.otto-tmp`);
   writeFileSync(tmp, contents);
   renameSync(tmp, file);
 }
