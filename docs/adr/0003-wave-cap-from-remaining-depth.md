@@ -11,7 +11,7 @@
 
 The wave loop needs a non-progress backstop: if the same unfinished slice keeps failing validation,
 the next `wave` recomputes the identical frontier and the loop spins forever without the graph
-draining. otto halts when the wave counter passes a cap.
+draining. wave halts when the wave counter passes a cap.
 
 The cap is `criticalDepth + buffer`:
 
@@ -20,7 +20,7 @@ The cap is `criticalDepth + buffer`:
   the number of waves a healthy run still needs, because a wave drains the whole unblocked frontier
   at once — so the minimum waves to completion is the depth of the remaining DAG, not the slice count.
 - **`buffer`** — user slack (`--buffer`/`-b`, default 2). Past the depth, it's the number of extra
-  waves of retries otto tolerates on the stuck frontier before declaring livelock.
+  waves of retries wave tolerates on the stuck frontier before declaring livelock.
 
 The cap is **mode-independent**. `inline` and `worktree` differ only in whether a wave's slices run
 sequentially or in parallel; both drain the same frontier per wave, so both take `criticalDepth`
@@ -35,7 +35,7 @@ work lands — a run stuck on a 1-deep remainder trips after `1 + buffer` waves 
 after the full original depth.
 
 This is only safe because **the wave counter is per-run and not persisted**: `LOOP.md` starts the
-counter at 1 on each `/otto run`, and it climbs only within one continuous loop. Counter and depth
+counter at 1 on each `/wave run`, and it climbs only within one continuous loop. Counter and depth
 are therefore both anchored to "this run's start." If the counter were ever persisted across
 resumes while depth kept excluding `done` slices, a healthy run that completed several waves and now
 has a shallow remainder would compare a large counter against a small cap and **falsely halt**.

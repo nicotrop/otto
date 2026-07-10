@@ -3,7 +3,7 @@
 **Status:** accepted (supersedes [0003](0003-wave-cap-from-remaining-depth.md))
 
 The wave loop needs a non-progress backstop: if the same unfinished slice keeps failing validation,
-the next `wave` recomputes the identical frontier and the loop spins without the graph draining. otto
+the next `wave` recomputes the identical frontier and the loop spins without the graph draining. wave
 halts when the wave counter passes a cap of `criticalDepth + buffer`.
 
 ## What the cap measures
@@ -40,7 +40,7 @@ counter restarts at 1 per run), but it tolerates more spinning than ideal before
 stuck resume.
 
 To tighten it, `wave` accepts `--depth`/`-d <n>` as an explicit override of the computed depth. On
-resume the run loop reads the **remaining** (not-`done`) depth from `otto status` — which prints it
+resume the run loop reads the **remaining** (not-`done`) depth from `wave status` — which prints it
 alongside the done/total count — and passes `-d <that>`. `WaveGraph.remainingDepth` is the not-`done`
 variant used only for that human/agent-facing number; the cap itself never computes it. This keeps
 the resume-specific number where someone already looks before resuming, instead of as standing loop

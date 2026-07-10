@@ -1,6 +1,7 @@
 ---
 name: to-slices
 description: Break a plan or PRD into independently-grabbable vertical slices written to .plans/ as markdown files. Use when user wants to break down a plan into implementation slices, create action items, or decompose work.
+compatibility: Claude Code
 disable-model-invocation: true
 ---
 
@@ -65,7 +66,7 @@ Update `.plans/<slug>/state.json` to include all slices, following the shape in
 [example.state.json](example.state.json) — `slices` keyed by slice name, each with a `status` and a
 `blocked_by` array naming its blocker slices.
 
-Valid statuses: `pending`, `review`, `done`. (otto's `Status` type is exactly these three — a
+Valid statuses: `pending`, `review`, `done`. (wave's `Status` type is exactly these three — a
 slice authored with any other status, e.g. `in-progress`, is `!== "pending"` and so is silently
 never picked up as runnable.)
 
@@ -76,18 +77,18 @@ Do NOT modify `prd.md` or any other existing files in the plan folder.
 After `state.json` is written, validate the whole plan before showing the user the result — a
 broken plan must never be the visible output of slicing.
 
-**Resolve the validator.** otto is the sibling skill of this one: from this skill's own directory
-(the "Base directory for this skill" path from the invocation), otto's CLI is
-`../otto/index.ts`. Let `OTTO="<that path>"` — the same way otto's `LOOP.md` resolves `$OTTO` to
-its own `index.ts`. If `../otto/index.ts` does not exist (otto genuinely isn't installed), warn
+**Resolve the validator.** wave is the sibling skill of this one: from this skill's own directory
+(the "Base directory for this skill" path from the invocation), wave's CLI is
+`../wave/index.ts`. Let `WAVE="<that path>"` — the same way wave's `LOOP.md` resolves `$WAVE` to
+its own `index.ts`. If `../wave/index.ts` does not exist (wave genuinely isn't installed), warn
 `"validator unavailable, skipping"` and leave `state.json` as written — do NOT fail slicing.
 
 **Run the loop:**
 
-1. Run `$OTTO validate <slug>`.
+1. Run `$WAVE validate <slug>`.
 2. **On exit 1** (errors): read the `error: <slice>: <msg>` lines from stderr, fix the cause in
    `state.json` and/or the offending slice `.md` files (e.g. a bad `blocked_by` reference, a
-   missing/invalid `**Type:**` line, a malformed `state.json`), then re-run `$OTTO validate <slug>`.
+   missing/invalid `**Type:**` line, a malformed `state.json`), then re-run `$WAVE validate <slug>`.
    **Repeat until validate exits 0, capped at 3 attempts.** If it still fails after the 3rd
    attempt, show the user the remaining `error:` problems and **stop** — do not silently ship a
    broken plan.
@@ -95,5 +96,5 @@ its own `index.ts`. If `../otto/index.ts` does not exist (otto genuinely isn't i
    an orphan `.md` file with no `state.json` entry). Print them for the user's awareness, but a
    warning is surfaced, not blocked on.
 
-Only after validate exits 0 (or warnings-only, or otto is not installed) present the finished
+Only after validate exits 0 (or warnings-only, or wave is not installed) present the finished
 breakdown to the user.
