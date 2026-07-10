@@ -1,6 +1,7 @@
 ---
 name: to-plan
 description: Turn the current conversation context into a PRD and write it to a .plans/ folder. Use when user wants to create a plan/PRD from the current context.
+compatibility: Claude Code
 disable-model-invocation: true
 ---
 

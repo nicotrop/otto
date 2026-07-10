@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Deterministic assertions for `otto wave`/`status`/`list` flags — no agents.
+# Deterministic assertions for `wave wave`/`status`/`list` flags — no agents.
 #
 #   ./flags.test.sh
 #
-# Resets the sandbox to the `basic` fixture, then drives otto with various flag
+# Resets the sandbox to the `basic` fixture, then drives wave with various flag
 # combinations and asserts the emitted wave JSON / exit codes. Exercises:
 #   -s/--slices   range scoping
 #   -m/--mode     worktree vs inline isolation
@@ -14,11 +14,11 @@
 set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OTTO="$here/../../index.ts"
-otto() { node --experimental-strip-types --no-warnings "$OTTO" "$@"; }
+WAVE="$here/../../index.ts"
+wave() { node --experimental-strip-types --no-warnings "$WAVE" "$@"; }
 # Pull one top-level field out of a `wave` JSON emission (stdout only).
-# Usage: field <fieldname> <otto args...>
-field() { local f="$1"; shift; otto "$@" 2>/dev/null | FIELD="$f" node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(String(w[process.env.FIELD]))"; }
+# Usage: field <fieldname> <wave args...>
+field() { local f="$1"; shift; wave "$@" 2>/dev/null | FIELD="$f" node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(String(w[process.env.FIELD]))"; }
 
 pass=0 fail=0
 check() { # check <label> <expected> <actual>
@@ -27,7 +27,7 @@ check() { # check <label> <expected> <actual>
 }
 # checks that a command exits non-zero (arg-validation guards)
 check_dies() { # check_dies <label> <args...>
-  if otto "${@:2}" >/dev/null 2>&1; then fail=$((fail+1)); printf '  ✗ %s — expected non-zero exit\n' "$1"
+  if wave "${@:2}" >/dev/null 2>&1; then fail=$((fail+1)); printf '  ✗ %s — expected non-zero exit\n' "$1"
   else pass=$((pass+1)); printf '  ✓ %s\n' "$1"; fi
 }
 
@@ -37,7 +37,7 @@ cd "$here/sandbox"
 echo "flags.test.sh — basic fixture (5 slices, structural depth 4)"
 
 # -s / --slices: scope the wave to a range.
-keys() { otto "$@" 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.slices.map(s=>s.key).join(','))"; }
+keys() { wave "$@" 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.slices.map(s=>s.key).join(','))"; }
 check "no -s → wave 1 has 1 slice (01-seed)" "01-seed" "$(keys wave basic -w 1)"
 # Range 2-3 with 01 not done → nothing unblocked in range (both need 01).
 check "-s 2-3 before 01 done → empty wave" "" "$(keys wave basic -w 1 -s 2-3)"
@@ -63,13 +63,13 @@ check "w2 vs -d 1 -b 0 cap 1 → reached"                "true"  "$(field cap_re
 
 # -m / --mode: a single-slice wave is always inline; isolation flips only with >1.
 check "mode default worktree, 1 slice → inline isolation" "inline" \
-  "$(otto wave basic -w 1 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.slices[0]?.isolation||'')")"
+  "$(wave wave basic -w 1 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.slices[0]?.isolation||'')")"
 check "-m inline → mode inline" "inline" \
-  "$(otto wave basic -w 1 -m inline 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.mode)")"
+  "$(wave wave basic -w 1 -m inline 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.mode)")"
 
 # status prints remaining depth for resume.
 check "status shows remaining depth 4 (fresh)" "remaining depth: 4  (0/5 slices done)" \
-  "$(otto status basic 2>/dev/null | grep -o 'remaining depth:.*')"
+  "$(wave status basic 2>/dev/null | grep -o 'remaining depth:.*')"
 
 # arg-validation guards.
 check_dies "-w 0 dies"   wave basic -w 0
@@ -79,13 +79,13 @@ check_dies "-d 0 dies"   wave basic -d 0
 check_dies "-m bogus dies" wave basic -m bogus
 
 # multi-slice worktree isolation: mark 01 done so 02+03 unblock.
-otto done basic 01-seed >/dev/null
+wave done basic 01-seed >/dev/null
 check "2-slice wave → worktree isolation" "worktree,worktree" \
-  "$(otto wave basic -w 2 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.slices.map(s=>s.isolation).join(','))")"
+  "$(wave wave basic -w 2 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.slices.map(s=>s.isolation).join(','))")"
 check "2-slice wave -m inline → inline isolation" "inline,inline" \
-  "$(otto wave basic -w 2 -m inline 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.slices.map(s=>s.isolation).join(','))")"
+  "$(wave wave basic -w 2 -m inline 2>/dev/null | node -e "const w=JSON.parse(require('fs').readFileSync(0));process.stdout.write(w.slices.map(s=>s.isolation).join(','))")"
 check "after 01 done, remaining depth 3" "remaining depth: 3  (1/5 slices done)" \
-  "$(otto status basic 2>/dev/null | grep -o 'remaining depth:.*')"
+  "$(wave status basic 2>/dev/null | grep -o 'remaining depth:.*')"
 
 "$here/reset-sandbox.sh" basic >/dev/null
 echo ""

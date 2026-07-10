@@ -2,7 +2,7 @@
 
 **Status:** accepted
 
-When `land`s a slice, otto rebases the slice branch onto current HEAD, computes the slice's
+When `land`s a slice, wave rebases the slice branch onto current HEAD, computes the slice's
 code-only delta (`git diff <base>...<branch> -- . ':!.plans'`), and applies it to the main working
 tree with `git apply`. Plain `git apply` is **not idempotent**: if the delta is already present in
 the working tree, it fails with `error: patch does not apply`. This bites the normal retry path —
@@ -10,10 +10,10 @@ if a `land` attempt applies the patch and then dies before committing (or the op
 `land` for any reason), every retry fails on a patch that is, in fact, already applied. The error
 message ("review manually before landing") wrongly implies a real conflict.
 
-We make the apply **idempotent**: when the initial `git apply` fails, otto runs
+We make the apply **idempotent**: when the initial `git apply` fails, wave runs
 `git apply --reverse --check` on the same patch. If the reverse-check passes, the change is already
-in the tree — otto logs an `info` line and proceeds (no-op success). Only if the reverse-check also
-fails does otto treat it as a genuine conflict and `die`.
+in the tree — wave logs an `info` line and proceeds (no-op success). Only if the reverse-check also
+fails does wave treat it as a genuine conflict and `die`.
 
 ```
 apply patch
@@ -31,7 +31,7 @@ it against the exact failing scenario (the slice's change already present, unsta
 tree) and it **also failed**, with `error: does not match index`. `--3way` reconstructs the
 patch's ancestor blob from the `index abc..def` line and three-way-merges against the **index**;
 when the working tree has the change but the index does not, that comparison fails. So `--3way`
-does not cover the precise case that bites otto. `--reverse --check` does — it directly answers the
+does not cover the precise case that bites wave. `--reverse --check` does — it directly answers the
 only question that matters here ("is this delta already in the tree?") and is verified across the
 clean / already-applied / genuine-conflict cases.
 

@@ -6,9 +6,9 @@ import { cmdStatus, cmdList } from "./commands/report.ts";
 import { cmdReset, cmdDone } from "./commands/mark.ts";
 import { cmdValidate } from "./commands/validate.ts";
 
-const HELP = `otto — slice-based plan runner
+const HELP = `wave — slice-based plan runner
 
-usage: otto <command> [<slug>] [<slice>] [flags]
+usage: wave <command> [<slug>] [<slice>] [flags]
 
 commands:
   validate <slug>          * validate the plan before a run (run-loop step 0)
@@ -29,7 +29,7 @@ flags:
   -L, --learning <text>    * learning note to attach on land
   -h, --help                 show this help
 
-* managed by the /otto run loop — not typically set by hand; see LOOP.md`;
+* managed by the /wave run loop — not typically set by hand; see LOOP.md`;
 
 function help() { process.stdout.write(HELP + "\n"); process.exit(0); }
 
@@ -48,5 +48,5 @@ switch (cmd) {
   default:
     die(`unknown command: ${cmd}\n` +
         `commands: validate wave land status list reset done help\n` +
-        `run 'otto help' or 'otto -h' for usage`);
+        `run 'wave help' or 'wave -h' for usage`);
 }
