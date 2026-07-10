@@ -45,7 +45,7 @@ export function cmdLand(slug: string, slice: string, learning?: string): void {
   if (!newBase) die(`lost track of ${slice}'s base after rebase — land manually`);
   const diff = git.run(["diff", `${newBase}...${branch}`, "--", ".", ":!.plans"]);
   if (diff.trim()) {
-    const patch = join(mkdtempSync(join(tmpdir(), "wave-")), `${slice}.diff`);
+    const patch = join(mkdtempSync(join(tmpdir(), "otto-")), `${slice}.diff`);
     writeFileSync(patch, diff + "\n");
     if (git.tryRun(["apply", patch]) === null) {
       if (git.tryRun(["apply", "--reverse", "--check", patch]) !== null) {

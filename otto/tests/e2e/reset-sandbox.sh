@@ -7,7 +7,7 @@
 # state.json "plan" field is the slug; the fixture is copied to .plans/<slug>/.
 #
 # Leaves the sandbox as: baseline commit checked out, working tree clean except
-# for the seeded (gitignored) .plans/<slug>/. Removes any wave worktrees/branches
+# for the seeded (gitignored) .plans/<slug>/. Removes any otto worktrees/branches
 # left by a previous run so the run is reproducible.
 set -euo pipefail
 
@@ -23,7 +23,7 @@ slug="$(node -e "process.stdout.write(require('$src/state.json').plan)")"
 
 cd "$sandbox"
 
-# Drop any wave worktrees + plan branches from a prior run.
+# Drop any otto worktrees + plan branches from a prior run.
 for wt in $(git worktree list --porcelain | awk '/^worktree /{print $2}' | grep "/.plans/.worktrees/" || true); do
   git worktree remove "$wt" --force 2>/dev/null || true
 done

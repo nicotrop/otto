@@ -13,7 +13,7 @@ changed-by-02
 Leave the rest of the file untouched. Trivial fixture slice — do exactly this. Do not touch `.plans/`.
 
 This intentionally collides with slice `01-edit-top`, which rewrites the same line in the same wave.
-wave must detect the conflict when landing the second slice and hard-stop. Your job is just to make
+otto must detect the conflict when landing the second slice and hard-stop. Your job is just to make
 the edit.
 
 ## Acceptance criteria

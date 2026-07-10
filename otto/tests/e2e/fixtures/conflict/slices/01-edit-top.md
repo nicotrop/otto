@@ -13,7 +13,7 @@ changed-by-01
 Leave the rest of the file untouched. Trivial fixture slice — do exactly this. Do not touch `.plans/`.
 
 This fixture deliberately makes two same-wave slices edit the same line of the same file. They are
-declared as independent (no `blocked_by` edge between them) on purpose, so wave's landing step must
+declared as independent (no `blocked_by` edge between them) on purpose, so otto's landing step must
 detect the collision and hard-stop. That is the behavior under test — your job is just to make the edit.
 
 ## Acceptance criteria
