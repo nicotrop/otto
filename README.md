@@ -6,7 +6,7 @@ wave runs a plan to completion in [Claude Code](https://www.claude.com/product/c
 
 ## Why I built it
 
-[This workshop](https://www.youtube.com/watch?v=-QFHIoCo-Ko) got me wanting to run [Ralph loops](https://ghuntley.com/ralph/) again. A Ralph loop is a single agent in a shell `while` loop, fresh context each pass, with state surviving in the repo (a TODO/state file plus git history). wave keeps that shape but runs on Claude Code subagents instead of a shell, and turns the flat loop into a dependency graph: it runs each wave of independent slices in parallel, compounding on the last.
+[This workshop](https://www.youtube.com/watch?v=-QFHIoCo-Ko) got me wanting to run [Ralph loops](https://ghuntley.com/ralph/) again. A Ralph loop is a single agent in a shell `while` loop, fresh context each pass, with state surviving in the repo (a TODO/state file plus git history). wave keeps that shape but runs on Claude Code subagents instead of a shell, and turns the flat loop into a dependency graph: main agent then runs each wave of independent slices in parallel, compounding on the last.
 
 Planning is already solved. Matt Pocock's [grill-me](https://github.com/mattpocock/skills/tree/main/skills/productivity/grill-me) / [grill-with-docs](https://github.com/mattpocock/skills/tree/main/skills/engineering/grill-with-docs) interrogate an idea until it's sharp, then [to-prd](https://github.com/mattpocock/skills/tree/main/skills/engineering/to-prd) / [to-issues](https://github.com/mattpocock/skills/tree/main/skills/engineering/to-issues) write it up. Those land in your GitHub issue tracker; I wanted to stay local.
 
