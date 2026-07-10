@@ -1,3 +1,11 @@
 .worktrees/
 .DS_Store
 node_modules/
+.plans/
+
+# dev-only — never ship to main
+tests/
+docs/
+CONTEXT.md
+lessons/
+learning-records/
